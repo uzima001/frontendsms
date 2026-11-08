@@ -1,0 +1,464 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_001",
+      "name": "Sarah Kimaro",
+      "email": "admin@smsgateway.io",
+      "password_hash": "a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea",
+      "email_verified_at": "2026-11-07T20:27:03.201Z",
+      "status": "ACTIVE",
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-08T20:27:03.200Z"
+    },
+    {
+      "id": "usr_test_1794169623392",
+      "name": "Developer Test User",
+      "email": "test_1794169623392@example.com",
+      "password_hash": "1428f60d9072f4f2dfdcc1c000b6ee0fe7a851481ac4767b519325b40a475b75",
+      "email_verified_at": "2026-11-08T20:27:03.399Z",
+      "status": "ACTIVE",
+      "created_at": "2026-11-08T20:27:03.399Z",
+      "updated_at": "2026-11-08T20:27:03.399Z"
+    }
+  ],
+  "devices": [
+    {
+      "id": "dev_samsung_m13_01",
+      "user_id": "usr_admin_001",
+      "device_name": "Samsung Galaxy M13",
+      "device_model": "SM-M135F",
+      "platform": "ANDROID",
+      "android_version": "14 (API 34)",
+      "app_version": "1.2.0",
+      "connection_status": "CONNECTED",
+      "gateway_status": "IDLE",
+      "sim_status": "ACTIVE",
+      "carrier_name": "Vodacom Tanzania / Airtel TZ",
+      "sim_slots": [
+        {
+          "slot_index": 0,
+          "subscription_id": 1,
+          "carrier": "Vodacom Tanzania",
+          "phone_number": "+255 754 892 110",
+          "signal_level": 4,
+          "is_active": true
+        },
+        {
+          "slot_index": 1,
+          "subscription_id": 2,
+          "carrier": "Airtel Tanzania",
+          "phone_number": "+255 682 411 905",
+          "signal_level": 3,
+          "is_active": true
+        }
+      ],
+      "battery_level": 88,
+      "is_charging": true,
+      "last_heartbeat_at": "2026-11-08T20:27:03.200Z",
+      "connected_at": "2026-11-07T20:27:03.201Z",
+      "revoked_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-08T20:27:03.200Z"
+    },
+    {
+      "id": "dev_pixel_7a_02",
+      "user_id": "usr_admin_001",
+      "device_name": "Google Pixel 7a (Backup Gateway)",
+      "device_model": "Pixel 7a",
+      "platform": "ANDROID",
+      "android_version": "14",
+      "app_version": "1.2.0",
+      "connection_status": "DISCONNECTED",
+      "gateway_status": "OFFLINE",
+      "sim_status": "ACTIVE",
+      "carrier_name": "Tigo Tanzania",
+      "sim_slots": [
+        {
+          "slot_index": 0,
+          "subscription_id": 1,
+          "carrier": "Tigo Tanzania",
+          "phone_number": "+255 713 550 224",
+          "signal_level": 3,
+          "is_active": true
+        }
+      ],
+      "battery_level": 42,
+      "is_charging": false,
+      "last_heartbeat_at": "2026-11-08T18:27:03.201Z",
+      "connected_at": "2026-11-07T20:27:03.201Z",
+      "revoked_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-08T18:27:03.201Z"
+    },
+    {
+      "id": "dev_a_1794169623400",
+      "user_id": "usr_test_1794169623392",
+      "device_name": "Device A",
+      "device_model": "Model A",
+      "platform": "ANDROID",
+      "android_version": "14",
+      "app_version": "1.0.0",
+      "connection_status": "CONNECTED",
+      "gateway_status": "IDLE",
+      "sim_status": "ACTIVE",
+      "carrier_name": "Vodacom",
+      "sim_slots": [],
+      "battery_level": 90,
+      "last_heartbeat_at": null,
+      "connected_at": null,
+      "revoked_at": null,
+      "created_at": "2026-11-08T20:27:03.400Z",
+      "updated_at": "2026-11-08T20:27:03.400Z"
+    }
+  ],
+  "pairing_sessions": [
+    {
+      "id": "pair_test_1794169623401",
+      "user_id": "usr_test_1794169623392",
+      "pairing_secret_hash": "9ffa1ffc23c1b9965a54452bf20ff6d0fd678543391cf7f177ffc7c69aa4c980",
+      "status": "PENDING",
+      "expires_at": "2026-11-08T20:29:03.401Z",
+      "consumed_at": null,
+      "created_at": "2026-11-08T20:27:03.401Z"
+    },
+    {
+      "id": "pair_3934335f-f43b-48dc-91e2-a9e6e6a0626b",
+      "user_id": "usr_admin_001",
+      "pairing_secret_hash": "9485e157d47fc39dd13af57a299bad1b6f37b9e91a11c0e52c1855bae1208db5",
+      "status": "PENDING",
+      "expires_at": "2026-11-08T20:36:09.410Z",
+      "consumed_at": null,
+      "created_at": "2026-11-08T20:34:09.410Z"
+    }
+  ],
+  "device_credentials": [
+    {
+      "id": "cred_dev_samsung_01",
+      "device_id": "dev_samsung_m13_01",
+      "credential_hash": "1abe400d6e845ef687c9a4ee9754c13057eed83fc2c7da2227999d6826bbc6a1",
+      "token_plain": "device_token_demo_samsung_123",
+      "credential_version": 1,
+      "expires_at": null,
+      "revoked_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z"
+    }
+  ],
+  "sms_messages": [
+    {
+      "id": "msg_01_inbound",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "direction": "INBOUND",
+      "sender": "+255715889900",
+      "recipient": "+255 754 892 110",
+      "message_body": "Habari, I wanted to confirm the shipping status of order #9821.",
+      "status": "DELIVERED",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "source_event_id": "evt_sim_in_01",
+      "received_at": "2026-11-08T18:27:03.201Z",
+      "created_at": "2026-11-08T18:27:03.201Z"
+    },
+    {
+      "id": "msg_02_outbound",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "direction": "OUTBOUND",
+      "sender": "+255 754 892 110",
+      "recipient": "+255715889900",
+      "message_body": "Hello Juma! Your order #9821 was dispatched this morning via Dar Express. Tracking ref: DX-44109.",
+      "status": "DELIVERED",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "idempotency_key": "idem_001_shipping",
+      "created_at": "2026-11-08T19:27:03.201Z",
+      "sent_at": "2026-11-08T19:27:03.201Z",
+      "delivered_at": "2026-11-08T19:27:03.201Z"
+    },
+    {
+      "id": "msg_03_inbound",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "direction": "INBOUND",
+      "sender": "+255762334455",
+      "recipient": "+255 754 892 110",
+      "message_body": "What are your working hours this Sunday?",
+      "status": "DELIVERED",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "source_event_id": "evt_sim_in_02",
+      "received_at": "2026-11-08T19:57:03.201Z",
+      "created_at": "2026-11-08T19:57:03.201Z"
+    },
+    {
+      "id": "msg_04_ai_reply",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "direction": "OUTBOUND",
+      "sender": "+255 754 892 110",
+      "recipient": "+255762334455",
+      "message_body": "[AI Auto-Reply] Hello Amina! Our Dar es Salaam main branch is open Sunday 9:00 AM to 3:00 PM. Call +255 754 892 110 for urgent support.",
+      "status": "SENT",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "idempotency_key": "idem_ai_reply_03",
+      "created_at": "2026-11-08T19:58:43.201Z",
+      "sent_at": "2026-11-08T19:58:48.201Z",
+      "delivered_at": null
+    },
+    {
+      "id": "msg_test_1794169623402",
+      "user_id": "usr_test_1794169623392",
+      "device_id": "dev_test_01",
+      "direction": "OUTBOUND",
+      "sender": "+255754000000",
+      "recipient": "+255712334455",
+      "message_body": "Unit test outbound SMS dispatch",
+      "status": "DELIVERED",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "idempotency_key": "idem_msg_test_1794169623402",
+      "created_at": "2026-11-08T20:27:03.402Z",
+      "sent_at": "2026-11-08T20:27:03.404Z",
+      "delivered_at": "2026-11-08T20:27:03.404Z"
+    },
+    {
+      "id": "msg_dup_1",
+      "user_id": "usr_test_1794169623392",
+      "device_id": "dev_test_01",
+      "direction": "INBOUND",
+      "sender": "+255711223344",
+      "recipient": "+255754000000",
+      "message_body": "Duplicate test",
+      "status": "DELIVERED",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "source_event_id": "evt_duplicate_check_1794169623405",
+      "created_at": "2026-11-08T20:27:03.405Z"
+    }
+  ],
+  "sms_commands": [
+    {
+      "id": "cmd_c27f6e73-541a-45ac-b649-cadac6c4301a",
+      "device_id": "dev_test_01",
+      "message_id": "msg_test_1794169623402",
+      "command_type": "SMS_SEND_COMMAND",
+      "payload": {
+        "command_id": "cmd_c27f6e73-541a-45ac-b649-cadac6c4301a",
+        "message_id": "msg_test_1794169623402",
+        "recipient": "+255712334455",
+        "message_body": "Unit test outbound SMS dispatch",
+        "subscription_id": 1,
+        "idempotency_key": "idem_msg_test_1794169623402"
+      },
+      "status": "ACKNOWLEDGED",
+      "attempts": 0,
+      "acknowledged_at": "2026-11-08T20:27:03.403Z",
+      "created_at": "2026-11-08T20:27:03.403Z",
+      "updated_at": "2026-11-08T20:27:03.403Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "cnt_01",
+      "user_id": "usr_admin_001",
+      "name": "Juma Mwamburi",
+      "phone_number": "+255715889900",
+      "email": "juma@mwamburi.co.tz",
+      "group_id": "grp_retail_clients",
+      "consent_status": "GRANTED",
+      "opted_out_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cnt_02",
+      "user_id": "usr_admin_001",
+      "name": "Amina Salum",
+      "phone_number": "+255762334455",
+      "email": "amina.salum@gmail.com",
+      "group_id": "grp_retail_clients",
+      "consent_status": "GRANTED",
+      "opted_out_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cnt_03",
+      "user_id": "usr_admin_001",
+      "name": "Dr. Michael Chen",
+      "phone_number": "+255788112233",
+      "email": "mchen@eastafricaclinic.org",
+      "group_id": "grp_tech_subscribers",
+      "consent_status": "GRANTED",
+      "opted_out_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cnt_04",
+      "user_id": "usr_admin_001",
+      "name": "Grace Mlay",
+      "phone_number": "+255744990011",
+      "email": "grace.mlay@arushaexp.com",
+      "group_id": "grp_retail_clients",
+      "consent_status": "GRANTED",
+      "opted_out_at": null,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-07T20:27:03.201Z"
+    }
+  ],
+  "contact_groups": [
+    {
+      "id": "grp_retail_clients",
+      "user_id": "usr_admin_001",
+      "name": "VIP Retail Clients",
+      "description": "Dar es Salaam wholesale and retail recurring buyers",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "grp_tech_subscribers",
+      "user_id": "usr_admin_001",
+      "name": "System Alerts & Staff",
+      "description": "Operations engineers and branch managers",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "cmp_holiday_promo",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "sim_slot": 0,
+      "subscription_id": 1,
+      "campaign_name": "Mid-Season Wholesale Promotion",
+      "message_template": "Habari {{name}}, enjoy 15% discount on all bulk shipments through Friday! Visit store or reply YES to order.",
+      "status": "COMPLETED",
+      "total_recipients": 4,
+      "queued_count": 0,
+      "sent_count": 4,
+      "failed_count": 0,
+      "delivered_count": 3,
+      "rate_limit_per_minute": 20,
+      "scheduled_at": "2026-11-07T20:27:03.201Z",
+      "started_at": "2026-11-07T20:27:03.201Z",
+      "completed_at": "2026-11-07T20:27:03.201Z",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    }
+  ],
+  "campaign_recipients": [
+    {
+      "id": "cr_01",
+      "campaign_id": "cmp_holiday_promo",
+      "contact_id": "cnt_01",
+      "phone_number": "+255715889900",
+      "recipient_name": "Juma Mwamburi",
+      "status": "DELIVERED",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cr_02",
+      "campaign_id": "cmp_holiday_promo",
+      "contact_id": "cnt_02",
+      "phone_number": "+255762334455",
+      "recipient_name": "Amina Salum",
+      "status": "DELIVERED",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cr_03",
+      "campaign_id": "cmp_holiday_promo",
+      "contact_id": "cnt_03",
+      "phone_number": "+255788112233",
+      "recipient_name": "Dr. Michael Chen",
+      "status": "DELIVERED",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "cr_04",
+      "campaign_id": "cmp_holiday_promo",
+      "contact_id": "cnt_04",
+      "phone_number": "+255744990011",
+      "recipient_name": "Grace Mlay",
+      "status": "SENT",
+      "created_at": "2026-11-07T20:27:03.201Z"
+    }
+  ],
+  "ai_settings": [
+    {
+      "id": "ai_cfg_01",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "enabled": true,
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "system_instructions": "You are an intelligent, professional customer support representative for SMS Gateway Hub in Tanzania. Answer inquiries concisely (under 160 characters whenever possible). Be courteous, friendly, and helpful. If asked about shipping, orders, or hours, provide clear direct answers. Support both English and Swahili appropriately.",
+      "response_language": "English and Swahili",
+      "maximum_response_length": 160,
+      "approval_mode": false,
+      "daily_limit": 100,
+      "daily_used": 1,
+      "response_delay_seconds": 3,
+      "allowed_contacts": [],
+      "blocked_contacts": [],
+      "cooldown_minutes": 15,
+      "fallback_response": "Thank you for reaching out. An agent will respond to your inquiry shortly.",
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-08T20:27:03.200Z"
+    }
+  ],
+  "ai_conversations": [
+    {
+      "id": "conv_01",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "phone_number": "+255762334455",
+      "last_message_at": "2026-11-08T20:27:03.200Z",
+      "automated_reply_count": 1,
+      "created_at": "2026-11-07T20:27:03.201Z",
+      "updated_at": "2026-11-08T20:27:03.200Z"
+    }
+  ],
+  "ai_automation_logs": [
+    {
+      "id": "ailog_01",
+      "user_id": "usr_admin_001",
+      "device_id": "dev_samsung_m13_01",
+      "incoming_message_id": "msg_03_inbound",
+      "phone_number": "+255762334455",
+      "incoming_text": "What are your working hours this Sunday?",
+      "generated_response": "[AI Auto-Reply] Hello Amina! Our Dar es Salaam main branch is open Sunday 9:00 AM to 3:00 PM. Call +255 754 892 110 for urgent support.",
+      "status": "SUCCESS",
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "latency_ms": 820,
+      "created_at": "2026-11-08T19:58:43.201Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "id": "aud_01",
+      "user_id": "usr_admin_001",
+      "action": "DEVICE_PAIRED",
+      "resource_type": "device",
+      "resource_id": "dev_samsung_m13_01",
+      "metadata": {
+        "device_name": "Samsung Galaxy M13",
+        "model": "SM-M135F"
+      },
+      "created_at": "2026-11-07T20:27:03.201Z"
+    },
+    {
+      "id": "aud_02",
+      "user_id": "usr_admin_001",
+      "action": "CAMPAIGN_COMPLETED",
+      "resource_type": "campaign",
+      "resource_id": "cmp_holiday_promo",
+      "metadata": {
+        "total": 4,
+        "delivered": 3
+      },
+      "created_at": "2026-11-07T20:27:03.201Z"
+    }
+  ]
+}

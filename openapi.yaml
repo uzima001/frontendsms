@@ -1,0 +1,460 @@
+openapi: 3.0.3
+info:
+  title: SMS Gateway Platform Central API
+  version: 1.0.0
+  description: >
+    Production-grade REST API for the SMS Gateway Platform, supporting Android SMS Gateway Agent
+    devices, web dashboard management, contact directories, bulk campaigns, and Gemini-powered auto-replies.
+servers:
+  - url: /api/v1
+    description: Current Environment Base API
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, example: "Sarah Kimaro" }
+                email: { type: string, format: email, example: "admin@smsgateway.io" }
+                password: { type: string, format: password, example: "Password123!" }
+      responses:
+        '201':
+          description: User created and session cookie set.
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Logged in successfully.
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Invalidate user session
+      responses:
+        '200':
+          description: Session cleared.
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current authenticated user profile
+      responses:
+        '200':
+          description: User object returned.
+
+  /pairing/initiate:
+    post:
+      tags: [Device Pairing]
+      summary: Initiate a 2-minute WhatsApp Web-style pairing session
+      responses:
+        '200':
+          description: Returns QR payload containing pairing_session_id, pairing_secret, and expiration.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      pairing_session_id: { type: string }
+                      pairing_secret: { type: string }
+                      api_url: { type: string }
+                      ws_url: { type: string }
+                      expires_at: { type: string, format: date-time }
+
+  /pairing/confirm:
+    post:
+      tags: [Device Pairing]
+      summary: Called by Android Agent after scanning QR code to register device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pairing_session_id, pairing_secret, device_name]
+              properties:
+                pairing_session_id: { type: string }
+                pairing_secret: { type: string }
+                device_name: { type: string, example: "Samsung Galaxy M13" }
+                device_model: { type: string, example: "SM-M135F" }
+                platform: { type: string, example: "ANDROID" }
+                android_version: { type: string, example: "14" }
+                app_version: { type: string, example: "1.2.0" }
+                carrier_name: { type: string, example: "Vodacom Tanzania" }
+                sim_slots:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      slot_index: { type: integer, example: 0 }
+                      subscription_id: { type: integer, example: 1 }
+                      carrier: { type: string, example: "Vodacom Tanzania" }
+                      phone_number: { type: string, example: "+255754892110" }
+                      signal_level: { type: integer, example: 4 }
+                      is_active: { type: boolean, example: true }
+      responses:
+        '201':
+          description: Device paired; returns permanent device_token.
+
+  /pairing/{id}/status:
+    get:
+      tags: [Device Pairing]
+      summary: Check pairing session status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Session state (PENDING, CONFIRMED, EXPIRED).
+
+  /devices:
+    get:
+      tags: [Devices]
+      summary: List all paired Android gateway devices
+      responses:
+        '200':
+          description: Array of device records.
+
+  /devices/{id}:
+    get:
+      tags: [Devices]
+      summary: Get device details, SIM slots, and battery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Device details.
+    patch:
+      tags: [Devices]
+      summary: Rename a device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_name: { type: string }
+      responses:
+        '200':
+          description: Device updated.
+
+  /devices/{id}/disconnect:
+    post:
+      tags: [Devices]
+      summary: Disconnect device WebSocket remotely
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Device disconnected.
+
+  /devices/{id}/revoke:
+    post:
+      tags: [Devices]
+      summary: Permanently revoke device credentials
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Device revoked.
+
+  /sms/inbound:
+    post:
+      tags: [SMS Management]
+      summary: Ingest inbound SMS forwarded from Android SIM card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_id, sender, message_body]
+              properties:
+                event_id: { type: string, description: "Unique event identifier for idempotency" }
+                device_id: { type: string }
+                sender: { type: string, example: "+255715889900" }
+                message_body: { type: string }
+                received_at: { type: string, format: date-time }
+                sim_slot: { type: integer, default: 0 }
+                subscription_id: { type: integer, default: 1 }
+      responses:
+        '201':
+          description: Inbound SMS recorded and processed.
+
+  /sms/send:
+    post:
+      tags: [SMS Management]
+      summary: Dispatch an outbound SMS message to an Android SIM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_id, recipient, message_body]
+              properties:
+                device_id: { type: string }
+                recipient: { type: string, example: "+255715889900" }
+                message_body: { type: string }
+                sim_slot: { type: integer, default: 0 }
+                subscription_id: { type: integer, default: 1 }
+                idempotency_key: { type: string }
+      responses:
+        '202':
+          description: SMS queued and dispatched via WebSocket command.
+
+  /sms:
+    get:
+      tags: [SMS Management]
+      summary: Filter and retrieve SMS messages
+      parameters:
+        - name: device_id
+          in: query
+          schema: { type: string }
+        - name: direction
+          in: query
+          schema: { type: string, enum: [INBOUND, OUTBOUND] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [QUEUED, DISPATCHED, SENT, DELIVERED, FAILED] }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Array of SMS message objects.
+
+  /sms/conversations:
+    get:
+      tags: [SMS Management]
+      summary: Get conversations grouped by phone number with unread counts
+      responses:
+        '200':
+          description: List of conversation summaries.
+
+  /sms/conversations/{phone_number}:
+    get:
+      tags: [SMS Management]
+      summary: Get complete message thread for a specific phone number
+      parameters:
+        - name: phone_number
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Thread messages.
+
+  /campaigns:
+    get:
+      tags: [Campaigns]
+      summary: List all bulk campaigns
+      responses:
+        '200':
+          description: List of campaigns.
+    post:
+      tags: [Campaigns]
+      summary: Create and optionally start a bulk SMS campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [campaign_name, device_id, message_template, recipients]
+              properties:
+                campaign_name: { type: string }
+                device_id: { type: string }
+                sim_slot: { type: integer, default: 0 }
+                subscription_id: { type: integer, default: 1 }
+                message_template: { type: string, example: "Habari {{name}}, promo available!" }
+                recipients:
+                  type: array
+                  items:
+                    type: object
+                    required: [phone_number]
+                    properties:
+                      phone_number: { type: string }
+                      name: { type: string }
+                rate_limit_per_minute: { type: integer, default: 30 }
+                start_immediately: { type: boolean, default: true }
+      responses:
+        '201':
+          description: Campaign created.
+
+  /campaigns/{id}/start:
+    post:
+      tags: [Campaigns]
+      summary: Start campaign dispatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Campaign started.
+
+  /campaigns/{id}/pause:
+    post:
+      tags: [Campaigns]
+      summary: Pause campaign dispatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Campaign paused.
+
+  /campaigns/{id}/resume:
+    post:
+      tags: [Campaigns]
+      summary: Resume paused campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Campaign resumed.
+
+  /campaigns/{id}/cancel:
+    post:
+      tags: [Campaigns]
+      summary: Cancel remaining queued messages in campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Campaign cancelled.
+
+  /contacts:
+    get:
+      tags: [Contacts]
+      summary: List contacts
+      responses:
+        '200':
+          description: Array of contacts.
+    post:
+      tags: [Contacts]
+      summary: Create new contact with normalized phone number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone_number]
+              properties:
+                name: { type: string }
+                phone_number: { type: string, example: "+255715889900" }
+                email: { type: string }
+                group_id: { type: string }
+      responses:
+        '201':
+          description: Contact created.
+
+  /ai/settings:
+    get:
+      tags: [AI Auto-Reply]
+      summary: Get AI Auto-Reply configuration
+      responses:
+        '200':
+          description: AI settings object.
+    put:
+      tags: [AI Auto-Reply]
+      summary: Update AI Auto-Reply instructions, language, and safety limits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                device_id: { type: string }
+                system_instructions: { type: string }
+                response_language: { type: string }
+                maximum_response_length: { type: integer, default: 160 }
+                daily_limit: { type: integer, default: 100 }
+                response_delay_seconds: { type: integer, default: 3 }
+                cooldown_minutes: { type: integer, default: 15 }
+                approval_mode: { type: boolean }
+      responses:
+        '200':
+          description: Settings updated.
+
+  /ai/test:
+    post:
+      tags: [AI Auto-Reply]
+      summary: Sandbox test prompt with Gemini without sending live SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incoming_text]
+              properties:
+                system_instructions: { type: string }
+                incoming_text: { type: string }
+                language: { type: string }
+                max_length: { type: integer }
+      responses:
+        '200':
+          description: Generated response and latency in ms.
+
+  /analytics/overview:
+    get:
+      tags: [Analytics]
+      summary: Dashboard KPI metrics, device counts, and hourly volumes
+      responses:
+        '200':
+          description: Metrics object.

@@ -1,0 +1,6 @@
+{
+  "name": "SMS Gateway Hub - Android Gateway Manager",
+  "description": "Production-grade multi-tenant SMS Gateway platform with Android SIM gateway pairing, real-time WebSocket messaging, bulk campaigns, AI auto-reply, and REST API.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Central Backend & Web Dashboard Service
+  sms-gateway-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sms-gateway-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://gateway_user:SecretPassword123!@postgres:5432/sms_gateway_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=super_secret_production_jwt_signing_key_32chars
+      - DEVICE_AUTH_SECRET=device_encryption_master_secret_2026
+      - APP_URL=https://gateway.yourdomain.com
+      - API_URL=https://api.yourdomain.com
+      - WEBSOCKET_URL=wss://api.yourdomain.com
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - gateway_data:/app/.data
+
+  # PostgreSQL Relational Database (Persistent Volume)
+  postgres:
+    image: postgres:16-alpine
+    container_name: sms-gateway-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gateway_user
+      POSTGRES_PASSWORD: SecretPassword123!
+      POSTGRES_DB: sms_gateway_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway_user -d sms_gateway_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for BullMQ Queue & Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sms-gateway-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Nginx Reverse Proxy with SSL and WebSocket Upgrades
+  nginx:
+    image: nginx:alpine
+    container_name: sms-gateway-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - sms-gateway-app
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  gateway_data:
+    driver: local

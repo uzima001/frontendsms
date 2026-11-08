@@ -1,0 +1,381 @@
+// Prisma Schema for SMS Gateway Platform
+// Compatible with PostgreSQL & CockroachDB
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum DeviceConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  CONNECTING
+  REVOKED
+  ERROR
+}
+
+enum GatewayStatus {
+  IDLE
+  SENDING
+  MAINTENANCE
+  OFFLINE
+}
+
+enum SimStatus {
+  ACTIVE
+  ABSENT
+  RESTRICTED
+}
+
+enum PairingStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+}
+
+enum SmsDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SmsStatus {
+  QUEUED
+  DISPATCHED
+  SENT
+  FAILED
+  DELIVERED
+  DELIVERY_UNKNOWN
+  CANCELLED
+}
+
+enum CommandStatus {
+  PENDING
+  DISPATCHED
+  ACKNOWLEDGED
+  COMPLETED
+  FAILED
+}
+
+enum ConsentStatus {
+  GRANTED
+  OPTED_OUT
+  PENDING
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  PAUSED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id                String       @id @default(uuid())
+  name              String
+  email             String       @unique
+  password_hash     String
+  email_verified_at DateTime?
+  status            UserStatus   @default(ACTIVE)
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updated_at
+
+  devices           Device[]
+  pairing_sessions  PairingSession[]
+  sms_messages      SmsMessage[]
+  contacts          Contact[]
+  contact_groups    ContactGroup[]
+  campaigns         Campaign[]
+  ai_settings       AiSettings[]
+  ai_conversations  AiConversation[]
+  ai_automation_logs AiAutomationLog[]
+  audit_logs        AuditLog[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Device {
+  id                 String                 @id @default(uuid())
+  user_id            String
+  device_name        String
+  device_model       String
+  platform           String                 @default("ANDROID")
+  android_version    String
+  app_version        String
+  connection_status  DeviceConnectionStatus @default(DISCONNECTED)
+  gateway_status     GatewayStatus          @default(IDLE)
+  sim_status         SimStatus              @default(ACTIVE)
+  carrier_name       String
+  battery_level      Int                    @default(100)
+  last_heartbeat_at  DateTime?
+  connected_at       DateTime?
+  revoked_at         DateTime?
+  created_at         DateTime               @default(now())
+  updated_at         DateTime               @updated_at
+
+  user               User                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  credentials        DeviceCredential[]
+  sms_messages       SmsMessage[]
+  sms_commands       SmsCommand[]
+  campaigns          Campaign[]
+  device_events      DeviceEvent[]
+
+  @@index([user_id])
+  @@index([connection_status])
+  @@map("devices")
+}
+
+model PairingSession {
+  id                  String        @id @default(uuid())
+  user_id             String
+  pairing_secret_hash String
+  status              PairingStatus @default(PENDING)
+  expires_at          DateTime
+  consumed_at         DateTime?
+  created_at          DateTime      @default(now())
+
+  user                User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+  @@map("pairing_sessions")
+}
+
+model DeviceCredential {
+  id                 String    @id @default(uuid())
+  device_id          String
+  credential_hash    String    @unique
+  credential_version Int       @default(1)
+  expires_at         DateTime?
+  revoked_at         DateTime?
+  created_at         DateTime  @default(now())
+
+  device             Device    @relation(fields: [device_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id])
+  @@map("device_credentials")
+}
+
+model SmsMessage {
+  id              String       @id @default(uuid())
+  user_id         String
+  device_id       String
+  direction       SmsDirection
+  sender          String
+  recipient       String
+  message_body    String       @db.Text
+  status          SmsStatus    @default(QUEUED)
+  sim_slot        Int          @default(0)
+  subscription_id Int          @default(1)
+  idempotency_key String?      @unique
+  source_event_id String?      @unique
+  campaign_id     String?
+  error_code      String?
+  error_message   String?
+  received_at     DateTime?
+  created_at      DateTime     @default(now())
+  sent_at         DateTime?
+  delivered_at    DateTime?
+
+  user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  device          Device       @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  commands        SmsCommand[]
+
+  @@index([user_id, created_at])
+  @@index([device_id, status])
+  @@index([recipient])
+  @@index([sender])
+  @@map("sms_messages")
+}
+
+model SmsCommand {
+  id              String        @id @default(uuid())
+  device_id       String
+  message_id      String
+  command_type    String        @default("SMS_SEND_COMMAND")
+  payload         Json
+  status          CommandStatus @default(PENDING)
+  attempts        Int           @default(0)
+  acknowledged_at DateTime?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updated_at
+
+  device          Device        @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  message         SmsMessage    @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id, status])
+  @@map("sms_commands")
+}
+
+model Contact {
+  id             String         @id @default(uuid())
+  user_id        String
+  name           String
+  phone_number   String
+  email          String?
+  group_id       String?
+  consent_status ConsentStatus  @default(GRANTED)
+  opted_out_at   DateTime?
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updated_at
+
+  user           User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  group          ContactGroup?  @relation(fields: [group_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, phone_number])
+  @@map("contacts")
+}
+
+model ContactGroup {
+  id          String    @id @default(uuid())
+  user_id     String
+  name        String
+  description String?
+  created_at  DateTime  @default(now())
+
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  contacts    Contact[]
+
+  @@index([user_id])
+  @@map("contact_groups")
+}
+
+model Campaign {
+  id                    String         @id @default(uuid())
+  user_id               String
+  device_id             String
+  campaign_name         String
+  message_template      String         @db.Text
+  status                CampaignStatus @default(DRAFT)
+  total_recipients      Int            @default(0)
+  queued_count          Int            @default(0)
+  sent_count            Int            @default(0)
+  failed_count          Int            @default(0)
+  delivered_count       Int            @default(0)
+  rate_limit_per_minute Int            @default(30)
+  scheduled_at          DateTime?
+  started_at            DateTime?
+  completed_at          DateTime?
+  created_at            DateTime       @default(now())
+
+  user                  User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  device                Device         @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  recipients            CampaignRecipient[]
+
+  @@index([user_id, status])
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id             String    @id @default(uuid())
+  campaign_id    String
+  contact_id     String?
+  phone_number   String
+  recipient_name String?
+  message_id     String?
+  status         String    @default("QUEUED")
+  error_message  String?
+  created_at     DateTime  @default(now())
+
+  campaign       Campaign  @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@index([campaign_id, status])
+  @@map("campaign_recipients")
+}
+
+model AiSettings {
+  id                      String   @id @default(uuid())
+  user_id                 String   @unique
+  device_id               String?
+  enabled                 Boolean  @default(true)
+  provider                String   @default("gemini")
+  model                   String   @default("gemini-3.8-flash")
+  system_instructions     String   @db.Text
+  response_language       String   @default("English and Swahili")
+  maximum_response_length Int      @default(160)
+  approval_mode           Boolean  @default(false)
+  daily_limit             Int      @default(100)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updated_at
+
+  user                    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("ai_settings")
+}
+
+model AiConversation {
+  id                    String   @id @default(uuid())
+  user_id               String
+  device_id             String
+  phone_number          String
+  last_message_at       DateTime @default(now())
+  automated_reply_count Int      @default(0)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updated_at
+
+  user                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, device_id, phone_number])
+  @@map("ai_conversations")
+}
+
+model AiAutomationLog {
+  id                  String   @id @default(uuid())
+  user_id             String
+  device_id           String
+  incoming_message_id String
+  generated_response  String   @db.Text
+  status              String   @default("SUCCESS")
+  provider            String   @default("gemini")
+  model               String   @default("gemini-3.8-flash")
+  error_message       String?
+  created_at          DateTime @default(now())
+
+  user                User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("ai_automation_logs")
+}
+
+model DeviceEvent {
+  id            String   @id @default(uuid())
+  user_id       String
+  device_id     String
+  event_type    String
+  event_payload Json
+  created_at    DateTime @default(now())
+
+  device        Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id, created_at])
+  @@map("device_events")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  user_id       String
+  action        String
+  resource_type String
+  resource_id   String?
+  metadata      Json?
+  created_at    DateTime @default(now())
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("audit_logs")
+}

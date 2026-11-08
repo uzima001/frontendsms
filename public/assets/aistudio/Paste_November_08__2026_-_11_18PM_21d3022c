@@ -1,0 +1,1888 @@
+# PROJECT: SMS GATEWAY PLATFORM — BACKEND API, DATABASE AND WEB DASHBOARD
+
+## 1. ROLE AND EXPECTATIONS
+
+Act as a senior full-stack software architect, backend engineer, database engineer, API designer, cybersecurity engineer, and frontend developer.
+
+Your task is to build a complete production-oriented SMS Gateway platform consisting of:
+
+1. Central Backend API.
+2. PostgreSQL Database.
+3. Real-time WebSocket communication infrastructure.
+4. SMS Queue and Processing Engine.
+5. AI Auto Reply Engine.
+6. Bulk SMS Management System.
+7. Professional Web Dashboard.
+
+This project communicates with a separately developed Android application called:
+
+**Android SMS Gateway Agent**
+
+Another AI development tool is responsible for developing that Android application.
+
+Your implementation must follow the exact shared architecture and communication protocol defined below.
+
+You must produce a system that can integrate with an independently developed Kotlin Android application without requiring arbitrary changes to either project.
+
+Do not create a simulated SMS gateway. The backend must communicate with actual Android devices through authenticated connections.
+
+---
+
+# 2. PROJECT OBJECTIVE
+
+Build a centralized platform that allows users to manage physical Android SIM cards remotely through a web browser.
+
+Each Android phone acts as an SMS Gateway device.
+
+The Android application receives SMS commands from the backend and uses the phone's physical SIM card to send messages.
+
+Incoming SMS messages are forwarded from the Android application to the backend.
+
+The website is the main control panel through which users manage all SMS operations.
+
+Users must be able to:
+
+- Connect Android phones using QR codes.
+- View connected devices.
+- Monitor device connectivity.
+- Receive incoming SMS messages in real time.
+- Send individual SMS messages.
+- Send bulk SMS messages.
+- View sent message history.
+- View delivery reports where supported.
+- Configure AI Auto Reply.
+- Configure automation rules.
+- Manage contacts and recipient groups.
+- Monitor sending queues.
+- View usage statistics.
+- Manage device settings.
+- Disconnect devices.
+- Monitor errors and failed messages.
+
+The platform should support multiple users and multiple Android devices per account.
+
+Every user's data must be isolated.
+
+---
+
+# 3. SYSTEM ARCHITECTURE
+
+Use the following architecture:
+
+                  WEB BROWSER
+                       |
+                       |
+                 NEXT.JS WEBSITE
+                       |
+                       | HTTPS REST API
+                       |
+                       v
+              CENTRAL BACKEND SERVER
+                       |
+           +-----------+------------+
+           |           |            |
+           v           v            v
+       PostgreSQL    Redis       AI ENGINE
+                     Queue
+           |           |
+           |           v
+           |       SMS PROCESSOR
+           |           |
+           |           v
+           |       WebSocket Server
+           |           |
+           +-----------+
+                       |
+                       | WSS
+                       |
+                       v
+              ANDROID GATEWAY AGENT
+                       |
+                       v
+                  PHYSICAL SIM
+                       |
+                       v
+                 MOBILE NETWORK
+
+The backend is the central source of truth.
+
+The Android application never communicates directly with the website.
+
+The website never communicates directly with the Android device.
+
+All communication must pass through the backend.
+
+The backend handles:
+
+- User authentication.
+- Device pairing.
+- Device authorization.
+- SMS storage.
+- SMS scheduling.
+- SMS queue processing.
+- AI processing.
+- WebSocket communication.
+- Rate control.
+- Delivery status updates.
+- Analytics.
+- Audit logging.
+
+---
+
+# 4. REQUIRED TECHNOLOGY STACK
+
+Use the following technologies.
+
+## Backend
+
+- Node.js.
+- TypeScript.
+- NestJS.
+- REST API.
+- Native WebSocket protocol using the `ws` library or a compatible NestJS WebSocket adapter.
+- PostgreSQL.
+- Prisma ORM.
+- Redis.
+- BullMQ.
+- JWT-based device authentication.
+- Secure HTTP-only cookies for website authentication.
+
+IMPORTANT:
+
+The Android application uses OkHttp's standard WebSocket client.
+
+Therefore, implement a compatible standard WebSocket server.
+
+Do not use Socket.IO as the device transport unless an additional compatible protocol is explicitly implemented.
+
+## Frontend
+
+- Next.js.
+- TypeScript.
+- React.
+- Tailwind CSS.
+- shadcn/ui or an equivalent professional component system.
+- TanStack Query for server-state management.
+- React Hook Form.
+- Zod validation.
+- Native WebSocket client for live updates.
+- Recharts for analytics.
+
+## Database
+
+- PostgreSQL.
+
+## Infrastructure
+
+- Docker.
+- Docker Compose.
+- Nginx reverse proxy.
+- Redis.
+- PostgreSQL.
+- Environment-based configuration.
+
+The project must be deployable to a Linux VPS.
+
+---
+
+# 5. MULTI-TENANT USER ARCHITECTURE
+
+The platform must support multiple independent users.
+
+Each user has:
+
+- An account.
+- A personal dashboard.
+- Connected Android devices.
+- SMS inbox.
+- Sent messages.
+- Contacts.
+- Contact groups.
+- Bulk campaigns.
+- AI configuration.
+- Automation rules.
+- Usage statistics.
+
+A user must never access another user's:
+
+- SMS messages.
+- Phone numbers.
+- Devices.
+- Contacts.
+- AI instructions.
+- Campaigns.
+- API credentials.
+- Usage statistics.
+
+Implement tenant isolation at the application and database access layers.
+
+Every user-owned database record must be associated with the appropriate user or tenant identifier.
+
+Validate authorization on every protected endpoint.
+
+Never trust a user_id supplied by the frontend without verifying it against the authenticated session.
+
+---
+
+# 6. USER AUTHENTICATION
+
+Implement:
+
+- User registration.
+- Login.
+- Logout.
+- Password hashing using Argon2id or bcrypt.
+- Email verification.
+- Password reset.
+- Secure session management.
+- Rate limiting for authentication attempts.
+- Account status management.
+
+Use secure HTTP-only cookies for browser sessions.
+
+Protect state-changing requests against CSRF.
+
+Use short-lived access credentials where appropriate.
+
+Implement role-based access control if administrative roles are introduced.
+
+Do not store passwords in plaintext.
+
+---
+
+# 7. QR DEVICE PAIRING SYSTEM
+
+This is one of the most important modules.
+
+The system must provide a WhatsApp Web-style device pairing experience.
+
+## Pairing workflow
+
+STEP 1:
+
+The user logs into the website.
+
+STEP 2:
+
+The user opens Device Management.
+
+STEP 3:
+
+The user clicks:
+
+Connect New Device
+
+STEP 4:
+
+The frontend calls:
+
+POST /api/v1/pairing/initiate
+
+STEP 5:
+
+The backend generates:
+
+- A unique pairing session ID.
+- A cryptographically random one-time pairing secret.
+- An expiration timestamp.
+- A pending pairing status.
+
+The pairing secret must be stored securely, preferably as a hash.
+
+STEP 6:
+
+The backend returns a QR payload.
+
+Example:
+
+{
+  "pairing_session_id": "pairing-uuid",
+  "pairing_secret": "one-time-random-secret",
+  "expires_at": "2026-11-08T12:02:00Z"
+}
+
+STEP 7:
+
+The frontend converts the payload into a QR code and displays it.
+
+STEP 8:
+
+The Android application scans the QR code.
+
+STEP 9:
+
+The Android application submits the pairing details:
+
+POST /api/v1/pairing/confirm
+
+Example request:
+
+{
+  "pairing_session_id": "pairing-uuid",
+  "pairing_secret": "one-time-random-secret",
+  "device_name": "Samsung Galaxy M13",
+  "platform": "ANDROID",
+  "android_version": "14",
+  "app_version": "1.0.0",
+  "device_public_key": "optional-public-key"
+}
+
+STEP 10:
+
+The backend:
+
+- Validates the pairing session.
+- Checks expiration.
+- Checks single-use status.
+- Associates the device with the authenticated website user's account through the pairing session.
+- Creates a permanent device record.
+- Issues device authentication credentials.
+- Marks the pairing session as consumed.
+
+STEP 11:
+
+The Android application securely stores its credentials and establishes a WebSocket connection.
+
+STEP 12:
+
+The website receives:
+
+DEVICE_CONNECTED
+
+The device status changes to CONNECTED.
+
+IMPORTANT SECURITY REQUIREMENTS:
+
+- QR pairing secrets must expire after approximately two minutes.
+- Pairing credentials must only be usable once.
+- Store pairing secrets as hashes.
+- Never place permanent device access tokens inside QR codes.
+- Prevent unauthorized account association.
+- Support device revocation.
+- Rate-limit pairing attempts.
+- Never expose pairing secrets in logs.
+- The pairing session must be bound to the authenticated website account that initiated it.
+
+The backend should support an explicit website confirmation step if the security design requires it.
+
+---
+
+# 8. DEVICE MANAGEMENT MODULE
+
+Users must be able to manage multiple Android devices.
+
+Each device record should contain:
+
+- Device ID.
+- Owner ID.
+- Device name.
+- Device model.
+- Android version.
+- Application version.
+- Connection status.
+- SIM status.
+- SIM slot information.
+- Carrier name where available.
+- Battery level.
+- Last heartbeat.
+- Last connection time.
+- Registration date.
+- Device authorization status.
+
+Device statuses:
+
+- CONNECTED
+- DISCONNECTED
+- CONNECTING
+- REVOKED
+- ERROR
+
+Implement:
+
+- Device listing.
+- Device details.
+- Rename device.
+- Disconnect device.
+- Revoke device.
+- View connection history.
+- View device activity.
+- Monitor battery and SIM status.
+
+A revoked device must immediately lose authorization.
+
+The backend must be able to send a DEVICE_DISCONNECT event to a connected device.
+
+---
+
+# 9. WEBSOCKET COMMUNICATION ARCHITECTURE
+
+Implement a persistent secure WebSocket server.
+
+Device connection:
+
+wss://api.yourdomain.com/device/connect
+
+The Android application initiates the connection.
+
+The backend authenticates the device using its issued credentials.
+
+Do not accept anonymous device connections.
+
+Implement:
+
+- Device authentication.
+- Connection registration.
+- Connection heartbeat.
+- Ping/pong handling.
+- Automatic disconnection detection.
+- Reconnection support.
+- Command acknowledgement.
+- Device command routing.
+- Connection cleanup.
+- Concurrent device management.
+
+Maintain an active connection registry.
+
+Example:
+
+device_id -> authenticated_websocket_connection
+
+A device must only receive commands intended for that device.
+
+When a device disconnects, mark its status as DISCONNECTED after the appropriate timeout.
+
+The backend must not rely only on an in-memory connection registry for message persistence.
+
+Pending commands must be stored durably.
+
+Use Redis and BullMQ for appropriate queue processing.
+
+---
+
+# 10. SHARED WEBSOCKET EVENT CONTRACT
+
+All events must use this JSON envelope:
+
+{
+  "event": "EVENT_NAME",
+  "event_id": "unique-event-id",
+  "device_id": "device-uuid",
+  "timestamp": "2026-11-08T12:00:00Z",
+  "payload": {}
+}
+
+## Events sent by backend to Android
+
+### SMS_SEND_COMMAND
+
+{
+  "event": "SMS_SEND_COMMAND",
+  "event_id": "event-uuid",
+  "device_id": "device-uuid",
+  "timestamp": "ISO-8601",
+  "payload": {
+    "command_id": "command-uuid",
+    "message_id": "message-uuid",
+    "recipient": "+2557XXXXXXXX",
+    "message_body": "Your message here.",
+    "subscription_id": 1,
+    "idempotency_key": "unique-key"
+  }
+}
+
+### DEVICE_CONFIG_UPDATE
+
+Used to update permitted device configuration.
+
+### PING
+
+Used for connection health checks.
+
+### DEVICE_DISCONNECT
+
+Used to revoke or terminate an authorized device connection.
+
+### COMMAND_CANCEL
+
+Used to cancel commands that have not yet been executed.
+
+## Events received from Android
+
+- DEVICE_CONNECTED
+- DEVICE_HEARTBEAT
+- DEVICE_DISCONNECTED
+- SMS_RECEIVED
+- SMS_SENT
+- SMS_DELIVERED
+- SMS_FAILED
+- COMMAND_ACKNOWLEDGED
+- DEVICE_STATUS
+
+Validate all incoming event structures.
+
+Never trust device-supplied user IDs.
+
+Resolve ownership from the authenticated device record.
+
+---
+
+# 11. SMS MANAGEMENT MODULE
+
+Build a complete SMS management system.
+
+The database is the source of truth for SMS records.
+
+## A. Incoming SMS
+
+Endpoint:
+
+POST /api/v1/sms/inbound
+
+Request:
+
+{
+  "event_id": "unique-event-id",
+  "device_id": "device-uuid",
+  "sender": "+2557XXXXXXXX",
+  "message_body": "Hello, I need assistance.",
+  "received_at": "2026-11-08T12:00:00Z",
+  "sim_slot": 0,
+  "subscription_id": 1
+}
+
+The backend must:
+
+1. Authenticate the device.
+2. Verify device ownership.
+3. Validate the incoming payload.
+4. Check event_id for duplicates.
+5. Normalize phone numbers where appropriate.
+6. Store the incoming SMS.
+7. Generate a database message ID.
+8. Trigger the appropriate automation rules.
+9. Broadcast the new SMS to the user's dashboard through WebSocket.
+
+Support idempotent processing.
+
+The Android device may deliver an incoming SMS through HTTPS and also report it through a WebSocket event. Prevent duplicate database records using a stable event identifier.
+
+## B. Outgoing SMS
+
+Endpoint:
+
+POST /api/v1/sms/send
+
+Request:
+
+{
+  "device_id": "device-uuid",
+  "recipient": "+2557XXXXXXXX",
+  "message_body": "Your appointment is confirmed.",
+  "subscription_id": 1,
+  "idempotency_key": "unique-key"
+}
+
+The backend must:
+
+1. Authenticate the website user.
+2. Verify device ownership.
+3. Validate recipient and message body.
+4. Check available sending permissions and quotas.
+5. Create a database message record.
+6. Add an SMS sending job to BullMQ.
+7. Dispatch the command to the appropriate connected Android device.
+8. Wait for acknowledgement.
+9. Update message status.
+10. Notify the website in real time.
+
+If the device is offline, preserve the message in a pending state.
+
+Do not falsely report that a message has been sent.
+
+## C. Message Status Management
+
+Use the following statuses:
+
+- QUEUED
+- DISPATCHED
+- SENT
+- FAILED
+- DELIVERED
+- DELIVERY_UNKNOWN
+- CANCELLED
+
+Definitions:
+
+QUEUED: Saved and waiting for processing.
+
+DISPATCHED: Sent to the Android gateway.
+
+SENT: Android reports successful submission to the telephony system.
+
+FAILED: The sending operation failed.
+
+DELIVERED: A delivery report confirms delivery, when available.
+
+DELIVERY_UNKNOWN: No reliable delivery confirmation is available.
+
+Never confuse SENT with DELIVERED.
+
+Store:
+
+- Message ID.
+- User ID.
+- Device ID.
+- Recipient.
+- Message body.
+- Direction.
+- Status.
+- SIM slot.
+- Created timestamp.
+- Sent timestamp.
+- Delivered timestamp.
+- Error information.
+- Campaign ID where applicable.
+
+---
+
+# 12. BULK SMS MODULE
+
+Build a professional bulk messaging system.
+
+Users must be able to:
+
+- Import contacts using CSV.
+- Select contacts.
+- Select contact groups.
+- Paste recipient numbers.
+- Create recipient groups.
+- Write SMS messages.
+- Review message previews.
+- Select a connected Android gateway.
+- Select an available SIM.
+- Schedule campaigns.
+- Start campaigns.
+- Pause campaigns.
+- Cancel pending campaigns.
+- View campaign statistics.
+
+## Campaign lifecycle
+
+DRAFT
+  |
+  v
+SCHEDULED
+  |
+  v
+PROCESSING
+  |
+  +---- COMPLETED
+  |
+  +---- PAUSED
+  |
+  +---- FAILED
+  |
+  +---- CANCELLED
+
+Each campaign must have:
+
+- Campaign ID.
+- Owner ID.
+- Campaign name.
+- Message template.
+- Recipient list.
+- Selected device.
+- Selected SIM.
+- Total recipients.
+- Queued count.
+- Sent count.
+- Failed count.
+- Delivered count where available.
+- Campaign status.
+- Scheduling information.
+
+## SMS QUEUE AND RATE CONTROL
+
+Use BullMQ and Redis.
+
+Implement:
+
+- Configurable sending intervals.
+- Per-device sending limits.
+- Per-SIM sending limits.
+- Queue concurrency controls.
+- Campaign pause/resume.
+- Retry policies.
+- Failed-message handling.
+- Duplicate prevention.
+- Daily usage limits.
+- Campaign cancellation.
+- Queue monitoring.
+
+Rate limits must be configurable according to legitimate carrier limits, local regulations, user quotas, and applicable messaging policies.
+
+Do not implement mechanisms designed to evade spam detection, carrier filtering, or platform restrictions.
+
+## CONSENT AND ABUSE PREVENTION
+
+This is mandatory.
+
+Implement:
+
+- Consent-based recipient lists.
+- Suppression lists.
+- Unsubscribe management.
+- STOP/opt-out handling where applicable.
+- Duplicate recipient detection.
+- Campaign audit records.
+- User sending quotas.
+- Abuse monitoring.
+- Message content validation.
+- Administrative suspension capability.
+
+Do not design the platform for unsolicited bulk messaging.
+
+---
+
+# 13. AI AUTO REPLY MODULE
+
+Implement an AI-powered automatic SMS response system.
+
+AI processing must happen on the backend.
+
+The Android application only receives and sends SMS through the SIM.
+
+The backend handles AI generation.
+
+## AI workflow
+
+Incoming SMS
+     |
+     v
+Backend receives SMS
+     |
+     v
+Check AI Auto Reply setting
+     |
+     +---- OFF: Store message and stop
+     |
+     +---- ON
+            |
+            v
+      Load AI configuration
+            |
+            v
+      Send request to AI provider
+            |
+            v
+      Generate response
+            |
+            v
+      Validate response
+            |
+            v
+      Add response to SMS queue
+            |
+            v
+      Dispatch to Android gateway
+            |
+            v
+      SIM sends reply
+
+## AI settings
+
+Each user must be able to configure:
+
+- Enable/disable AI Auto Reply.
+- Select the connected Android device.
+- Select SIM.
+- Custom system instructions.
+- AI provider.
+- AI model.
+- Response language.
+- Maximum response length.
+- Operating schedule.
+- Allowed contacts.
+- Blocked contacts.
+- Automatic response delay.
+- Daily response limits.
+- Human approval mode.
+- Fallback response.
+
+Support an extensible AI provider architecture.
+
+Do not hardcode one AI provider.
+
+Keep API keys encrypted and server-side.
+
+Never expose AI provider credentials to the frontend or Android application.
+
+## AI SAFETY
+
+Implement:
+
+- Maximum response limits.
+- Rate limits.
+- Duplicate message protection.
+- Prompt injection resistance.
+- Contact allowlists and blocklists.
+- Sensitive information safeguards.
+- AI response validation.
+- Loop prevention.
+- Human approval option.
+- Opt-out recognition.
+
+The AI must never automatically respond indefinitely to repeated messages.
+
+Implement conversation-level cooldowns and maximum automated replies.
+
+---
+
+# 14. CONTACT MANAGEMENT
+
+Create a contact management module.
+
+Features:
+
+- Add contact.
+- Edit contact.
+- Delete contact.
+- Import CSV.
+- Export contacts.
+- Search contacts.
+- Group contacts.
+- Manage consent.
+- Manage opt-out status.
+- View SMS history for a contact.
+
+Contact fields:
+
+- Contact ID.
+- Owner ID.
+- Name.
+- Phone number.
+- Email (optional).
+- Group ID.
+- Consent status.
+- Opt-out status.
+- Created timestamp.
+
+Phone numbers should be normalized using an established phone-number parsing library.
+
+Support Tanzanian numbers and international formats.
+
+---
+
+# 15. WEB DASHBOARD DESIGN
+
+Create a clean, modern, professional SaaS dashboard.
+
+The interface must be responsive and work on desktop, tablet, and mobile browsers.
+
+Design direction:
+
+- Professional SaaS interface.
+- Clean white or light-neutral background.
+- Dark sidebar.
+- Carefully controlled accent color.
+- Minimal unnecessary animations.
+- Clear typography.
+- Consistent spacing.
+- Professional data tables.
+- Good empty states.
+- Useful loading states.
+- Error states.
+- Accessible components.
+
+Avoid generic AI-looking designs, excessive gradients, and unnecessary decorative elements.
+
+## A. Dashboard Overview
+
+Display:
+
+- Total connected devices.
+- Online devices.
+- Offline devices.
+- Total incoming SMS.
+- Total outgoing SMS.
+- Sent messages.
+- Failed messages.
+- Delivered messages where confirmed.
+- Active campaigns.
+- AI Auto Reply status.
+- Recent activity.
+
+Use charts for meaningful analytics.
+
+## B. Device Management
+
+Display connected devices as cards or a table.
+
+Each device should show:
+
+- Device name.
+- Model.
+- Connection status.
+- SIM status.
+- Carrier.
+- Battery.
+- Last heartbeat.
+- Current gateway status.
+
+Actions:
+
+- Connect device.
+- View device.
+- Rename.
+- Disconnect.
+- Revoke.
+
+### Connect Device Interface
+
+When the user clicks Connect Device:
+
+1. Request pairing session from backend.
+2. Display QR code.
+3. Display expiration countdown.
+4. Listen for pairing status through WebSocket.
+5. Show success after pairing.
+6. Allow the user to retry if expired.
+
+## C. SMS Inbox
+
+Create a messaging inbox.
+
+Features:
+
+- Incoming messages.
+- Outgoing messages.
+- Conversation grouping by phone number.
+- Search.
+- Filters.
+- Message timestamps.
+- Device identification.
+- SIM identification.
+- Real-time incoming updates.
+- Read/unread status.
+- Message details.
+
+Display messages in a clean conversation layout.
+
+Do not imply that an SMS was delivered if only SENT status is available.
+
+## D. Send SMS
+
+Create an SMS composer.
+
+Fields:
+
+- Recipient number.
+- Message body.
+- Gateway device.
+- SIM selection.
+
+Display:
+
+- Character count.
+- Estimated SMS segment count.
+- Sending status.
+- Validation errors.
+
+Allow sending an individual message.
+
+## E. Bulk SMS
+
+Create a complete campaign management interface.
+
+Include:
+
+- Campaign creation wizard.
+- Recipient import.
+- Contact group selection.
+- Message editor.
+- Preview.
+- Gateway selection.
+- SIM selection.
+- Scheduling.
+- Campaign confirmation.
+- Live progress.
+- Pause/resume.
+- Campaign reports.
+
+## F. AI Auto Reply
+
+Create an AI settings dashboard.
+
+Controls:
+
+- Master AI toggle.
+- AI provider selection.
+- Model selection.
+- System instruction editor.
+- Language.
+- Maximum reply length.
+- Allowed contacts.
+- Blocked contacts.
+- Operating hours.
+- Automatic reply delay.
+- Human approval mode.
+- Daily response limit.
+
+Include an AI configuration testing area.
+
+Users should be able to preview an AI response without sending an actual SMS.
+
+## G. Analytics
+
+Display:
+
+- Incoming SMS over time.
+- Outgoing SMS over time.
+- Success rate.
+- Failure rate.
+- Campaign performance.
+- Device utilization.
+- AI response activity.
+- Usage by SIM.
+
+Use real database data.
+
+Do not use fabricated statistics.
+
+---
+
+# 16. DATABASE DESIGN
+
+Use PostgreSQL and Prisma ORM.
+
+Design a normalized, indexed relational database.
+
+At minimum, implement these entities:
+
+## users
+
+- id
+- name
+- email
+- password_hash
+- email_verified_at
+- status
+- created_at
+- updated_at
+
+## devices
+
+- id
+- user_id
+- device_name
+- device_model
+- platform
+- android_version
+- app_version
+- connection_status
+- gateway_status
+- sim_status
+- carrier_name
+- battery_level
+- last_heartbeat_at
+- connected_at
+- revoked_at
+- created_at
+- updated_at
+
+## pairing_sessions
+
+- id
+- user_id
+- pairing_secret_hash
+- status
+- expires_at
+- consumed_at
+- created_at
+
+## device_credentials
+
+- id
+- device_id
+- credential_hash
+- credential_version
+- expires_at
+- revoked_at
+- created_at
+
+Store only securely protected credential verifiers or hashes where appropriate. Never store reusable plaintext device secrets.
+
+## sms_messages
+
+- id
+- user_id
+- device_id
+- direction
+- sender
+- recipient
+- message_body
+- status
+- sim_slot
+- subscription_id
+- idempotency_key
+- source_event_id
+- campaign_id
+- error_code
+- error_message
+- received_at
+- created_at
+- sent_at
+- delivered_at
+
+## sms_commands
+
+- id
+- device_id
+- message_id
+- command_type
+- payload
+- status
+- attempts
+- acknowledged_at
+- created_at
+- updated_at
+
+## contacts
+
+- id
+- user_id
+- name
+- phone_number
+- consent_status
+- opted_out_at
+- created_at
+- updated_at
+
+## contact_groups
+
+- id
+- user_id
+- name
+- description
+- created_at
+
+## contact_group_members
+
+- id
+- group_id
+- contact_id
+
+## campaigns
+
+- id
+- user_id
+- device_id
+- campaign_name
+- message_template
+- status
+- total_recipients
+- queued_count
+- sent_count
+- failed_count
+- delivered_count
+- scheduled_at
+- started_at
+- completed_at
+- created_at
+
+## campaign_recipients
+
+- id
+- campaign_id
+- contact_id
+- phone_number
+- message_id
+- status
+- error_message
+- created_at
+
+## ai_settings
+
+- id
+- user_id
+- device_id
+- enabled
+- provider
+- model
+- system_instructions
+- response_language
+- maximum_response_length
+- approval_mode
+- daily_limit
+- created_at
+- updated_at
+
+## ai_conversations
+
+- id
+- user_id
+- device_id
+- phone_number
+- last_message_at
+- automated_reply_count
+- created_at
+- updated_at
+
+## ai_automation_logs
+
+- id
+- user_id
+- device_id
+- incoming_message_id
+- generated_response
+- status
+- provider
+- model
+- error_message
+- created_at
+
+## device_events
+
+- id
+- user_id
+- device_id
+- event_type
+- event_payload
+- created_at
+
+## audit_logs
+
+- id
+- user_id
+- action
+- resource_type
+- resource_id
+- metadata
+- created_at
+
+Define appropriate:
+
+- Foreign keys.
+- Unique constraints.
+- Database indexes.
+- Cascade behavior.
+- Transaction boundaries.
+- Data retention rules.
+
+Add appropriate indexes for frequently queried fields, including user_id, device_id, message status, phone numbers, created_at, and event identifiers.
+
+Use database transactions for important operations such as pairing, campaign creation, and message state changes.
+
+---
+
+# 17. API SPECIFICATION
+
+All REST endpoints must use:
+
+/api/v1/
+
+Use consistent JSON responses.
+
+Example success:
+
+{
+  "success": true,
+  "data": {},
+  "message": "Operation successful"
+}
+
+Example failure:
+
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request."
+  }
+}
+
+Implement the following API groups.
+
+## Authentication
+
+POST /api/v1/auth/register
+
+POST /api/v1/auth/login
+
+POST /api/v1/auth/logout
+
+GET /api/v1/auth/me
+
+POST /api/v1/auth/forgot-password
+
+POST /api/v1/auth/reset-password
+
+## Pairing
+
+POST /api/v1/pairing/initiate
+
+POST /api/v1/pairing/confirm
+
+GET /api/v1/pairing/:id/status
+
+POST /api/v1/pairing/:id/cancel
+
+## Devices
+
+GET /api/v1/devices
+
+GET /api/v1/devices/:id
+
+PATCH /api/v1/devices/:id
+
+POST /api/v1/devices/:id/disconnect
+
+POST /api/v1/devices/:id/revoke
+
+## SMS
+
+POST /api/v1/sms/inbound
+
+POST /api/v1/sms/send
+
+GET /api/v1/sms
+
+GET /api/v1/sms/:id
+
+GET /api/v1/sms/conversations
+
+GET /api/v1/sms/conversations/:phone_number
+
+POST /api/v1/sms/:id/retry
+
+## Campaigns
+
+POST /api/v1/campaigns
+
+GET /api/v1/campaigns
+
+GET /api/v1/campaigns/:id
+
+POST /api/v1/campaigns/:id/start
+
+POST /api/v1/campaigns/:id/pause
+
+POST /api/v1/campaigns/:id/resume
+
+POST /api/v1/campaigns/:id/cancel
+
+## Contacts
+
+POST /api/v1/contacts
+
+GET /api/v1/contacts
+
+PATCH /api/v1/contacts/:id
+
+DELETE /api/v1/contacts/:id
+
+POST /api/v1/contacts/import
+
+GET /api/v1/contact-groups
+
+POST /api/v1/contact-groups
+
+## AI
+
+GET /api/v1/ai/settings
+
+PUT /api/v1/ai/settings
+
+POST /api/v1/ai/test
+
+GET /api/v1/ai/logs
+
+## Analytics
+
+GET /api/v1/analytics/overview
+
+GET /api/v1/analytics/messages
+
+GET /api/v1/analytics/campaigns
+
+GET /api/v1/analytics/devices
+
+Implement pagination, filtering, sorting, input validation, and authorization.
+
+Document all endpoints using OpenAPI/Swagger.
+
+---
+
+# 18. DEVICE-SPECIFIC API AUTHENTICATION
+
+Website users and Android devices have different authentication mechanisms.
+
+Website authentication:
+
+- Secure HTTP-only session cookies.
+- CSRF protection.
+- User ownership validation.
+
+Android device authentication:
+
+- Unique device credentials.
+- Secure device authentication.
+- Revocable credentials.
+- Credential rotation.
+- Device ownership resolved from authenticated device records.
+
+Never allow the Android application to authenticate as a website user using the user's password.
+
+The device must only access device-authorized endpoints and events.
+
+---
+
+# 19. REAL-TIME WEBSITE COMMUNICATION
+
+The website must receive updates without refreshing the page.
+
+Use authenticated WebSocket connections.
+
+Website connection:
+
+wss://api.yourdomain.com/user/connect
+
+Authenticate the website user securely.
+
+The backend must subscribe each connection to the correct user's events.
+
+Required website events:
+
+- DEVICE_CONNECTED
+- DEVICE_DISCONNECTED
+- DEVICE_STATUS
+- SMS_RECEIVED
+- SMS_QUEUED
+- SMS_SENT
+- SMS_DELIVERED
+- SMS_FAILED
+- CAMPAIGN_PROGRESS
+- CAMPAIGN_COMPLETED
+- AI_REPLY_GENERATED
+- AI_REPLY_FAILED
+
+Use the following event envelope:
+
+{
+  "event": "SMS_RECEIVED",
+  "event_id": "event-uuid",
+  "timestamp": "ISO-8601",
+  "payload": {}
+}
+
+Ensure that events are delivered only to the appropriate account.
+
+Do not broadcast private SMS data to all connected users.
+
+Implement reconnection and state resynchronization.
+
+WebSocket events are notifications, not the source of truth. The website must be able to reload current state from REST APIs after reconnecting.
+
+---
+
+# 20. SMS QUEUE RELIABILITY
+
+This is a critical system component.
+
+The platform must not lose queued SMS commands when:
+
+- A device goes offline.
+- The backend restarts.
+- Redis temporarily becomes unavailable.
+- A WebSocket connection disconnects.
+- A worker crashes.
+- A message fails to send.
+
+Use persistent queue processing.
+
+Implement:
+
+- Retry policies.
+- Exponential backoff.
+- Dead-letter handling.
+- Command expiration.
+- Idempotency keys.
+- Command acknowledgements.
+- Duplicate protection.
+- Transactional database updates.
+- Queue recovery after restart.
+
+A command should not be marked successfully sent simply because it was placed in a queue.
+
+Maintain separate states for:
+
+- Queued.
+- Dispatched.
+- Acknowledged.
+- Sent.
+- Failed.
+- Delivered.
+
+If a device is offline, retain the job and wait until it reconnects, subject to its expiration and campaign policy.
+
+---
+
+# 21. SECURITY AND PRIVACY
+
+Implement production-grade security.
+
+Requirements:
+
+- HTTPS everywhere.
+- WSS everywhere.
+- Secure password hashing.
+- Secure session handling.
+- CSRF protection.
+- CORS restrictions.
+- Input validation.
+- SQL injection protection.
+- Rate limiting.
+- Account isolation.
+- Device authentication.
+- Device revocation.
+- Audit logs.
+- Secure secret management.
+- Protection against replay attacks.
+- Idempotency protection.
+- Safe error handling.
+- Sensitive-data redaction.
+
+SMS messages can contain sensitive information.
+
+Implement access controls and data retention settings.
+
+Never expose message content, credentials, AI provider keys, or device tokens in public frontend code.
+
+Do not use client-provided device ownership information as authorization.
+
+---
+
+# 22. DEPLOYMENT ARCHITECTURE
+
+The project must support deployment on an Ubuntu Linux VPS using Docker Compose.
+
+Suggested structure:
+
+sms-gateway-platform/
+│
+├── backend/
+│   ├── src/
+│   ├── prisma/
+│   ├── test/
+│   └── Dockerfile
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── Dockerfile
+│
+├── infrastructure/
+│   ├── nginx/
+│   └── docker/
+│
+├── docker-compose.yml
+├── .env.example
+├── README.md
+└── API_CONTRACT.md
+
+Services:
+
+- frontend
+- backend
+- PostgreSQL
+- Redis
+- SMS queue worker
+
+Use persistent Docker volumes for PostgreSQL and Redis where appropriate.
+
+Do not store production database files inside ephemeral containers.
+
+Use database migrations.
+
+Provide health checks.
+
+Use environment variables for:
+
+DATABASE_URL
+REDIS_URL
+JWT_SECRET
+DEVICE_AUTH_SECRET
+APP_URL
+API_URL
+WEBSOCKET_URL
+AI_PROVIDER_API_KEY
+
+Never commit actual production credentials.
+
+Provide:
+
+- Docker Compose configuration.
+- Nginx configuration.
+- SSL deployment instructions.
+- Database backup instructions.
+- Database restore instructions.
+- Application update instructions.
+- Log inspection instructions.
+- Environment setup documentation.
+
+The project must be deployable without interfering with other applications running on the VPS.
+
+---
+
+# 23. TESTING REQUIREMENTS
+
+Implement unit, integration, and end-to-end tests.
+
+Test the following scenarios:
+
+### Authentication
+- Registration.
+- Login.
+- Invalid credentials.
+- Unauthorized requests.
+- Session expiration.
+
+### Device pairing
+- Successful QR pairing.
+- Expired QR code.
+- Reused QR code.
+- Invalid token.
+- Device revocation.
+- Multiple devices per account.
+
+### Incoming SMS
+- Successful ingestion.
+- Duplicate event.
+- Invalid device.
+- Offline device recovery.
+- Live dashboard updates.
+
+### Outgoing SMS
+- Successful queue creation.
+- Device online.
+- Device offline.
+- Command dispatch.
+- Command acknowledgement.
+- SMS failure.
+- Delivery report.
+- Duplicate commands.
+
+### Bulk SMS
+- CSV import.
+- Invalid phone numbers.
+- Duplicate contacts.
+- Consent validation.
+- Rate limiting.
+- Campaign pause.
+- Campaign resume.
+- Campaign cancellation.
+
+### AI
+- AI disabled.
+- AI enabled.
+- Successful response generation.
+- Provider failure.
+- Duplicate reply prevention.
+- Conversation cooldown.
+- Opt-out recognition.
+
+### Multi-tenancy
+- User A cannot access User B's devices.
+- User A cannot access User B's messages.
+- User A cannot access User B's campaigns.
+- User A cannot access User B's AI settings.
+
+---
+
+# 24. DEVELOPMENT APPROACH
+
+Do not build the entire application as a collection of disconnected UI mockups.
+
+Develop in phases.
+
+PHASE 1 — FOUNDATION
+
+- Project setup.
+- Database schema.
+- Authentication.
+- API architecture.
+- Docker configuration.
+
+PHASE 2 — DEVICE MANAGEMENT
+
+- Pairing API.
+- QR generation.
+- Device registration.
+- Device authentication.
+- WebSocket server.
+- Heartbeat management.
+
+PHASE 3 — SMS CORE
+
+- Incoming SMS ingestion.
+- Outgoing SMS queue.
+- Device command dispatch.
+- Message status tracking.
+- Real-time dashboard updates.
+
+PHASE 4 — WEB DASHBOARD
+
+- Overview.
+- Device management.
+- SMS inbox.
+- Send SMS.
+- Message history.
+
+PHASE 5 — BULK SMS
+
+- Contact management.
+- Campaign creation.
+- CSV import.
+- Queue management.
+- Rate controls.
+- Campaign analytics.
+
+PHASE 6 — AI AUTOMATION
+
+- AI provider abstraction.
+- AI configuration.
+- Automatic response processing.
+- Safety controls.
+- Automation logs.
+
+PHASE 7 — PRODUCTION HARDENING
+
+- Security testing.
+- Integration testing.
+- Performance testing.
+- Backup and recovery.
+- Deployment documentation.
+
+---
+
+# 25. INTEGRATION CONTRACT WITH ANDROID TEAM
+
+The Android application is being developed independently.
+
+The following details are mandatory integration requirements:
+
+Base API:
+
+https://api.yourdomain.com/api/v1
+
+Device WebSocket:
+
+wss://api.yourdomain.com/device/connect
+
+Pairing endpoint:
+
+POST /api/v1/pairing/confirm
+
+Incoming SMS endpoint:
+
+POST /api/v1/sms/inbound
+
+Outgoing SMS command:
+
+SMS_SEND_COMMAND
+
+Device event types:
+
+- DEVICE_CONNECTED
+- DEVICE_HEARTBEAT
+- DEVICE_DISCONNECTED
+- SMS_RECEIVED
+- SMS_SENT
+- SMS_DELIVERED
+- SMS_FAILED
+- COMMAND_ACKNOWLEDGED
+- DEVICE_STATUS
+
+Use the exact event names and payload structures specified in this document.
+
+The Android team must not have to reverse-engineer the backend.
+
+Create a shared API contract document and OpenAPI specification.
+
+Include complete JSON examples for every device request and response.
+
+Include WebSocket event schemas and authentication requirements.
+
+If you need to change an endpoint or event structure, update the API contract and document the change before implementation.
+
+---
+
+# 26. REQUIRED DELIVERABLES
+
+Deliver:
+
+1. Complete Next.js frontend.
+2. Complete NestJS backend.
+3. PostgreSQL database schema.
+4. Prisma models.
+5. Database migrations.
+6. Authentication system.
+7. QR device pairing system.
+8. Device management system.
+9. WebSocket server.
+10. SMS ingestion API.
+11. SMS queue processing engine.
+12. SMS sending command dispatch.
+13. Message history.
+14. Bulk SMS management.
+15. AI Auto Reply engine.
+16. Contact management.
+17. Analytics dashboard.
+18. OpenAPI/Swagger documentation.
+19. API_CONTRACT.md.
+20. Docker Compose configuration.
+21. Nginx configuration.
+22. .env.example.
+23. Automated tests.
+24. README.md.
+25. Deployment and maintenance documentation.
+
+Build actual working functionality.
+
+Do not substitute mock data for real database integration.
+
+Do not leave critical features as placeholder buttons.
+
+Do not claim that SMS has been delivered when the Android device only confirms that the message was submitted.
+
+Do not silently ignore integration failures.
+
+---
+
+# 27. FINAL ACCEPTANCE CRITERIA
+
+The platform is considered functional when:
+
+1. A user can register and log in.
+2. A user can initiate device pairing.
+3. The website generates a QR code.
+4. An Android application can scan and pair successfully.
+5. The device appears in the website dashboard.
+6. The backend establishes an authenticated WebSocket connection with the Android gateway.
+7. Incoming SMS messages appear in the website without refreshing the page.
+8. A user can send an SMS from the website.
+9. The backend dispatches the SMS command to the correct Android device.
+10. The Android device sends the SMS using its physical SIM.
+11. The website receives sending status updates.
+12. Bulk SMS campaigns can be created and monitored.
+13. AI Auto Reply can process incoming messages and send responses through the connected gateway.
+14. Multiple devices can operate under one account.
+15. Multiple users can use the platform without accessing each other's data.
+16. Device disconnection and revocation work correctly.
+17. Queued messages survive backend restarts.
+18. The application can be deployed on a Linux VPS.
+
+The result must be a functional, secure, extensible SMS Gateway SaaS platform.
+
+Prioritize correctness, API consistency, security, reliability, and maintainability over unnecessary features or visual decoration.
